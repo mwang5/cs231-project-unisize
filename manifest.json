@@ -1,17 +1,28 @@
 {
-	"name": "My First Extension",
-	"version": "1.0",
+	"name": "Unisize",
+	"version": "0.0.1",
 	"manifest_version": 2,
-	"description": "The first extension that I made.",
-	"browser_action": {
-		"default_icon": "icon.png"
-	},
+	"description": "Adaptive Resizing of Web Pages",
+  	"background": { "scripts": ["background.js"] },
 	"permissions": [
-		"http://api.flickr.com/"
+			"tabs"
 		],
 
-	"browser_action": {
-		"default_icon": "icon.png",
-		"default_popup": "popup.html"
-	}
+	"page_action": {
+		"default_icon": "icon-inactive.png",
+		"default_title": "Unisize"
+	},
+	"content_scripts" : [
+		{
+			"matches" : [
+				"http://www.facebook.com/*",
+				"http://facebook.com/*",
+				"https://www.facebook.com/*",
+				"https://facebook.com/*"
+				],
+			"js" : ["content.js"],
+			"run_at" : "document_idle",
+			"all_frames" : false
+		}
+	]
 }
