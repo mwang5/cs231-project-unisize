@@ -27,21 +27,24 @@ function getHostname(url) {
 
 // Called when a message is passed.  
 function onRequest(request, sender, sendResponse) {
-	// Change page action for the tab that the sender (content script)
-	// was on.
 	var icon
 	var tid = sender.tab.id
-	
-	if (request.state == true) {
-		icon = 'icon.png'
-	} else if (request.state == false) {
-		icon = 'icon-inactive.png'
-	}
-	chrome.pageAction.show(tid)
-	chrome.pageAction.setIcon({path: icon, tabId: tid})
 
-	// Return nothing to let the connection be cleaned up.
-	sendResponse({})
+	if (typeof request.iconState != 'undefined') {
+		if (request.iconState == "active") {
+			icon = 'icon.png'
+		} else if (request.state == "passive") {
+			icon = 'icon-inactive.png'
+		} else
+			throw "invalid icon state"
+		chrome.pageAction.show(tid)
+		chrome.pageAction.setIcon({path: icon, tabId: tid})
+		sendResponse({})
+	} else {
+		// lookup matching rule
+		var rule = global_rules[0]; 
+		sendResponse(rule)
+	}
 }
 
 

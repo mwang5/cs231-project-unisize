@@ -1,32 +1,57 @@
 
 // true: squeezed, false: normal
-var state = undefined
+var isActive = false
+var unmodifiedActualWidth = null
 
-function checkWindowSize() {
-	var is_small
-	//is_small = (window.innerWidth < 640)
-	var root = document.compatMode=='BackCompat'? document.body : document.documentElement
-	is_small = root.scrollWidth > root.clientWidth
-	return is_small
+function getGeometry() {
+	return {
+		"width": {
+			"actual": document.documentElement.scrollWidth,
+		   	"viewport": document.documentElement.clientWidth
+			}
+		}
 }
 
-function updateState() {
-	var old_state = state
-	state = checkWindowSize()
-	return (old_state === undefined || state != old_state) 
-}
-
-
-function requestResizeIfNeeded() {
-	if (updateState()) {
-		chrome.extension.sendRequest({"state": state}, function(response) {})
+function handleEvent() 
+{
+	var w = getGeometry().width
+	
+	if (!isActive && (w.actual > w.viewport)) {
+		isActive = true;
+		unmodifiedActualWidth = w.actual
+		modify()
+		chrome.extension.sendRequest({"iconState": "active"}, function(){})
+	}
+	else if (isActive && (w.viewport >= unmodifiedActualWidth)) {
+		isActive = false;
+		unmodifiedActualWidth = null
+		restore()		
+		chrome.extension.sendRequest({"iconState": "passive"}, function(){})
 	}
 }
 
 
+function modify() {
+	// get a matching rule
+	chrome.extension.sendRequest({}, function(rule) {
+		// apply rule
+		var mods = rule.mods
+		for (var i = 0; i < mods.length; i++) {
+			applyTransform(mods[i].transform)
+		}
+	})
+	// update icon
+}
+
+function restore() {
+	// XXX: poor solution, will clear forms
+	window.location.reload()
+}
+
+
 window.addEventListener('resize', function() {
-	requestResizeIfNeeded()
+	handleEvent()
 })
 
-requestResizeIfNeeded()
+handleEvent()
 

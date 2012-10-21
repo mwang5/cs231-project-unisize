@@ -3,9 +3,10 @@
 	"version": "0.0.1",
 	"manifest_version": 2,
 	"description": "Adaptive Resizing of Web Pages",
-  	"background": { "scripts": ["background.js"] },
+  	"background": { "scripts": ["background.js", "rules.js"] },
 	"permissions": [
-			"tabs"
+			"tabs",
+			"*://*.facebook.com/"
 		],
 
 	"page_action": {
@@ -15,12 +16,10 @@
 	"content_scripts" : [
 		{
 			"matches" : [
-				"http://www.facebook.com/*",
-				"http://facebook.com/*",
-				"https://www.facebook.com/*",
-				"https://facebook.com/*"
+				"*://*.facebook.com/",
+				"*://*.facebook.com/?sk=nf"
 				],
-			"js" : ["content.js"],
+			"js" : ["content.js", "resize.js"],
 			"run_at" : "document_idle",
 			"all_frames" : false
 		}
