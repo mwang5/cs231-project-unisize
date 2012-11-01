@@ -6,6 +6,8 @@
   	"background": { "scripts": ["background.js", "rules.js"] },
 	"permissions": [
 			"tabs",
+			"webRequest",
+			"webRequestBlocking",
 			"*://*.facebook.com/"
 		],
 
@@ -16,8 +18,17 @@
 	"content_scripts" : [
 		{
 			"matches" : [
-				"*://*.facebook.com/",
-				"*://*.facebook.com/?sk=nf"
+				// facebook newsfeed only
+				"*://facebook.com/",
+				"*://facebook.com/?sk=nf",
+				"*://facebook.com/home.php*",
+				"*://www.facebook.com/",
+				"*://www.facebook.com/?sk=nf",
+				"*://www.facebook.com/home.php*",
+				// (mobile)
+				"*://m.facebook.com/",
+				"*://m.facebook.com/#!/home.php*",
+				"*://m.facebook.com/?_rdr*"
 				],
 			"js" : ["content.js", "resize.js"],
 			"run_at" : "document_idle",

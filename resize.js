@@ -47,3 +47,5 @@ function getComputedMetric(elem, name) {
 		throw ("style." + name + " does not end in \"px\" or otherwise invalid")
 	return parseInt(str.substr(0, str.length - 2))
 }
+
+

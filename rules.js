@@ -8,8 +8,10 @@ global_rules =
 			
 				{
 					// Shrink left-side navigation
-				   "type": "draw-under",	
-					"transform": [
+				   //"id": 1,
+				   //"gain": 100,			   			   
+				   "type": "draw-under",
+				   "transform": [
 					    // necessary DOM transformations	
 						{ 
 							"target": '//*[@id="leftCol"]', // XPath of element
@@ -31,6 +33,8 @@ global_rules =
 
 				{
 					// Hide right column entirely (Ticker + Ads)
+					//"id" : 2,
+					//"gain": 244,
 					"type": "hide",
 					"transform": [ 
 						{ 
@@ -47,6 +51,8 @@ global_rules =
 				
 				{
 					// Make top blue navigation bar more compact
+					//"id" : 3
+					//"gain": 340,
 					"type": "unspecified",
 					"transform": [ 
 						{
