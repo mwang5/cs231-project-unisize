@@ -1,5 +1,6 @@
 
 // true: squeezed, false: normal
+var mods = null
 var isActive = false
 var mobileWidthThreshold = 400
 var unmodifiedActualWidth = null
@@ -80,20 +81,30 @@ function handleEvent()
 
 
 function modification_apply() {
-	// get a matching rule
-	chrome.extension.sendRequest({}, function(rule) {
-		// apply rule
-		var mods = rule.mods
+		
+	function _apply() {
 		for (var i = 0; i < mods.length; i++) {
 			applyTransform(mods[i].transform)
 		}
-	})
-	// update icon
+	}
+	// get a matching rule
+	if (mods == null) {
+		chrome.extension.sendRequest({}, function(rule) {
+			mods = rule.mods
+			_apply()
+		})
+	} else {
+		_apply()
+	}
 }
 
+
 function modification_revert() {
+	for (var i = 0; i < mods.length; i++) {
+		applyTransform(mods[i].transform, true) // reverse (!)
+	}
 	// XXX: poor solution, will clear forms
-	window.location.reload()
+	//window.location.reload()
 }
 
 function mobile_apply() {

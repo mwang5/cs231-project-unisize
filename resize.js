@@ -1,5 +1,8 @@
-function applyTransform(tranList) 
+function applyTransform(tranList, reverse) 
 {
+	rev = (typeof reverse != 'undefined' && reverse == true)
+	var arithm = function(a,b) { return !rev? (a-b) : (a+b) }
+
 	for (var i = 0; i< tranList.length; i++) {
 
 		var tran = tranList[i]
@@ -10,11 +13,11 @@ function applyTransform(tranList)
 		switch(tran.method) {
 			case "decreaseWidth":
 				oldval = getComputedMetric(tgt, "width")
-				tgt.style.width = oldval - tran.args + "px"
+				tgt.style.width = arithm(oldval,tran.args) + "px"
 				break;
 			case "decreaseMinWidth":
 				oldval = getComputedMetric(tgt, "min-width")
-				tgt.style.minWidth = oldval - tran.args + "px"
+				tgt.style.minWidth = arithm(oldval, tran.args) + "px"
 				break;
 			case "decreaseMargin":
 				var sides = ["left", "right", "top", "bottom"]
@@ -24,13 +27,17 @@ function applyTransform(tranList)
 						var propName1 = "margin-" + which
 						var propName2 = "margin" + which.substr(0,1).toUpperCase() + which.substr(1)
 						oldval = getComputedMetric(tgt,propName1)
-						tgt.style[propName2] = oldval - tran.args[which] + "px"
+						tgt.style[propName2] = arithm(oldval, tran.args[which]) + "px"
 						break;
 					}
 				}
 				break;
 			case "remove":
-				tgt.parentNode.removeChild(tgt)
+				if (!rev) {
+					tgt.style.display = 'none'
+				} else {
+					tgt.style.display = '';
+				}
 				break;
 			default:
 		}
