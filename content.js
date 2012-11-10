@@ -46,6 +46,8 @@ function handleEvent()
 	if (unmodifiedActualWidth == null && (w.actual > w.viewport) && w.viewport > mobileWidthThreshold) {
 		unmodifiedActualWidth = w.actual
 	}
+	
+	chrome.extension.sendRequest({"onResized": null, "tabSizePolicy" : "individual"}, function(){})
 
 	newLevel = getAppropriateLevel(w)
 	if (newLevel == curLevel)
