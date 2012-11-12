@@ -30,7 +30,7 @@
 				"*://m.facebook.com/#!/home.php*",
 				"*://m.facebook.com/?_rdr*"
 				],
-			"js" : ["content.js", "resize.js"],
+			"js" : ["content.js"],
 			"run_at" : "document_idle",
 			"all_frames" : false
 		}

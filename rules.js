@@ -1,4 +1,8 @@
-global_rules = 
+var T_RELATIVE_PIXEL_METRIC = 1
+var T_SET_STRING_PROPERTY	= 2
+
+
+RULE_DEFINITIONS = 
 	[
 		{
 			// Hard-coded rule for a particular page/ webapp view
@@ -10,23 +14,26 @@ global_rules =
 					// Shrink left-side navigation
 				   //"id": 1,
 				   //"gain": 100,			   			   
-				   "type": "draw-under",
+				   //"type": "draw-under",
 				   "transform": [
 					    // necessary DOM transformations	
 						{ 
-							"target": '//*[@id="leftCol"]', // XPath of element
-						   	"method": "decreaseWidth" ,
-							"args" : 100 
+							"element": '//*[@id="leftCol"]', // XPath of element
+							"method": T_RELATIVE_PIXEL_METRIC,
+							"property": "width",
+							"maxDelta" : -100 
 						},
 						{ 
-							"target": '//*[@id="contentCol"]',
-						   	"method": "decreaseMargin", 
-							"args": { "left": 100 }
+							"element": '//*[@id="contentCol"]',
+							"method": T_RELATIVE_PIXEL_METRIC,
+							"property": "margin-left",
+							"maxDelta" : -100 
 					   	}, 
 						{ 
-							"target": '//*[@id="globalContainer"]',
-						   	"method": "decreaseWidth",
-						   	"args": 100
+							"element": '//*[@id="globalContainer"]',
+							"method": T_RELATIVE_PIXEL_METRIC,
+							"property": "width",
+						   	"maxDelta": -100
 					   	}                       
 					]
 				},                      
@@ -35,16 +42,19 @@ global_rules =
 					// Hide right column entirely (Ticker + Ads)
 					//"id" : 2,
 					//"gain": 244,
-					"type": "hide",
+					//"type": "hide",
 					"transform": [ 
 						{ 
-							"target": '//*[@id="rightCol"]',
-						   	"method": "remove"
+							"element": '//*[@id="rightCol"]',
+						   	"method": T_SET_STRING_PROPERTY,
+							"property": "display",
+							"value"	  : "none"
 					   	},                 
 						{ 
-							"target": '//*[@id="globalContainer"]',
-						   	"method": "decreaseWidth",
-						   	"args": 244
+							"element": '//*[@id="globalContainer"]',
+							"method": T_RELATIVE_PIXEL_METRIC,
+							"property": "width",
+						   	"maxDelta": -244
 					   	}          
 					]   
 				},
@@ -53,41 +63,49 @@ global_rules =
 					// Make top blue navigation bar more compact
 					//"id" : 3
 					//"gain": 340,
-					"type": "unspecified",
+					//"type": "unspecified",
 					"transform": [ 
 						{
 						   // Resize search field	
-							"target": '//*[@id="q"]',
-						   	"method": "decreaseWidth",
-							"args": 100
+							"element": '//*[@id="q"]',
+							"method": T_RELATIVE_PIXEL_METRIC,
+							"property": "width",
+							"maxDelta": -100
 					   	},                 
 						{
 						   // Resize search field	
-							"target": '//*[@id="navSearch"]',
-						   	"method": "decreaseWidth",
-							"args": 100
+							"element": '//*[@id="navSearch"]',
+							"method": T_RELATIVE_PIXEL_METRIC,
+							"property": "width",
+							"maxDelta": -100
 					   	},                 
 						{
 						   // Remove "Find Friends"	
-							"target": '//*[@id="findFriendsNav"]/parent::*',
-						   	"method": "remove"
+							"element": '//*[@id="findFriendsNav"]/parent::*',
+						   	"method": T_SET_STRING_PROPERTY,
+							"property": "display",
+							"value"	  : "none"
 					   	},
 						{ 
 							// Remove "Home"
-							"target": '//*[@id="navHome"]',
-						   	"method": "remove"
+							"element": '//*[@id="navHome"]',
+						   	"method": T_SET_STRING_PROPERTY,
+							"property": "display",
+							"value"	  : "none"
 					   	},
 						{
 						   // Squeeze container element
-							"target": '//*[@id="pageHead"]',
-						   	"method": "decreaseWidth",
-							"args": 340
+							"element": '//*[@id="pageHead"]',
+							"method": T_RELATIVE_PIXEL_METRIC,
+							"property": "width",
+							"maxDelta": -340
 					   	},                 
 						{
 						   // Squeeze container element
-							"target": '//*[@id="blueBar"]',
-						   	"method": "decreaseMinWidth",
-							"args": 340
+							"element": '//*[@id="blueBar"]',
+							"method": T_RELATIVE_PIXEL_METRIC,
+							"property": "min-width",
+							"maxDelta": -340
 					   	},                 
 			   						
 					]   

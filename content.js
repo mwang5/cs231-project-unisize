@@ -1,136 +1,109 @@
+var previousViewportSize = null
 
-// true: squeezed, false: normal
-var mods = null
-var isActive = false
-var mobileWidthThreshold = 400
-var unmodifiedActualWidth = null
-var previousViewportWidth = null
-/*	0	unmodified
-	1	resized
-   	2	mobile		*/
-var curLevel = 0
+init()
 
 
-function getGeometry() {
-	return {
-		"width": {
-			"actual": document.documentElement.scrollWidth,
-		   	"viewport": document.documentElement.clientWidth
+function init() 
+{
+	chrome.extension.sendRequest({"type": "init"}, function(){})
+	_handleResize()
+	window.addEventListener('resize', _handleResize)
+}
+
+
+function _handleResize()
+{
+	var geom = _getGeometry() 
+	if (previousViewportSize == null || !_sizeEqual(previousViewportSize, geom.viewportSize)) {
+		previousViewportSize = geom.viewportSize
+		chrome.extension.sendRequest( {"type": "resize", "newGeometry": geom}, function(response) {
+			var ts = response.parametrizedElementTransformList
+			if (typeof ts != 'undefined') {
+				for (var i = 0; i < ts.length; i++) {
+					applyTransform(ts[i].elementTransform, ts[i].param)
+				}
 			}
-		}
-}
-
-function getAppropriateLevel(w) 
-{
-	if (w.viewport < mobileWidthThreshold) {
-		return 2
-	} else	if (w.viewport < unmodifiedActualWidth) {
-		return 1
-	} else {
-		return 0
-	}
-}
-
-function handleEvent() 
-{
-	console.log(tstamp() + " handling resize event");
-	var w = getGeometry().width
-	
-	if (previousViewportWidth && previousViewportWidth == w.viewport) {
-		console.log("\tignoring duplicate resize event");
-		return; 
-	} else {
-		previousViewportWidth = w.viewport;
-	}
-	
-	if (unmodifiedActualWidth == null && (w.actual > w.viewport) && w.viewport > mobileWidthThreshold) {
-		unmodifiedActualWidth = w.actual
-	}
-	
-	chrome.extension.sendRequest({"onResized": null, "tabSizePolicy" : "individual"}, function(){})
-
-	newLevel = getAppropriateLevel(w)
-	if (newLevel == curLevel)
-		return;
-	
-	if (curLevel == 0) {
-		if (newLevel == 1) {
-			modification_apply()
-		} else if (newLevel == 2) {
-			mobile_apply()
-		}
-	} else if (curLevel == 1) {
-		if (newLevel == 0) {
-			modification_revert()
-		} else if (newLevel == 2) {
-			mobile_apply()
-		}
-	} else if (curLevel == 2) {
-		if (newLevel == 0) {
-			mobile_revert()
-		} else if (newLevel == 1) {
-			mobile_revert()
-			modification_apply()
-		}
-	}
-
-	curLevel = newLevel
-	chrome.extension.sendRequest({"iconState": curLevel}, function(){})
-	
-	console.log("\tviewport is now " + w.viewport );
-	console.log("\tnotifying background page");
-}
-
-
-function modification_apply() {
-		
-	function _apply() {
-		for (var i = 0; i < mods.length; i++) {
-			applyTransform(mods[i].transform)
-		}
-	}
-	// get a matching rule
-	if (mods == null) {
-		chrome.extension.sendRequest({}, function(rule) {
-			mods = rule.mods
-			_apply()
 		})
+	}
+}
+
+
+function _sizeEqual(a,b) {
+	return (a.width == b.width && a.height == b.height)
+}
+
+function _getGeometry()
+{
+	return { "viewportSize": {
+				"width": document.documentElement.clientWidth,
+				"height": document.documentElement.clientHeight
+				},
+			"contentSize": {
+				"width": document.documentElement.scrollWidth,
+				"height": document.documentElement.scrollHeight
+				}
+			}
+}
+
+
+var T_RELATIVE_PIXEL_METRIC = 1
+var T_SET_STRING_PROPERTY	= 2
+
+
+function applyTransform(tran, param) 
+{
+	var xpres = document.evaluate(tran.element, document, null, XPathResult.UNORDERED_NODE_ITERATOR_TYPE, null)
+	var elem = xpres.iterateNext()
+
+	switch(tran.method) {
+		case T_RELATIVE_PIXEL_METRIC:
+			elem.style[_stylePropertyNameToCamelCase(tran.property)] = 
+					(_getComputedMetric(elem, tran.property) + param) + "px"
+			break
+		case T_SET_STRING_PROPERTY:
+			elem.style[_stylePropertyNameToCamelCase(tran.property)] = param 
+			break
+		default:
+			throw "unsupported element transformation method"
+	}
+}
+
+
+function _stylePropertyNameToCamelCase(name)
+{
+	var errstr = "_propertyNameToCamelCase(): invalid argument" 
+    var	components = name.split('-')
+	if (components[0] == "") { // -webkit-*
+		s = 1
 	} else {
-		_apply()
+		s = 0
 	}
-}
+	if (components.length <= s)
+		throw errstr
 
-
-function modification_revert() {
-	for (var i = 0; i < mods.length; i++) {
-		applyTransform(mods[i].transform, true) // reverse (!)
+	var res = ""
+	for (var i = s; i< components.length; i++) {
+		var c = components[i]
+		if (c == "")
+			throw errstr
+		if (i == s) {
+			res = res + c
+		} else  {
+			res  = res + c.substr(0,1).toUpperCase() + c.substr(1)
+		}
 	}
-	// XXX: poor solution, will clear forms
-	//window.location.reload()
-}
-
-function mobile_apply() {
-	chrome.extension.sendRequest({"mobile": true}, function(){
-		document.body.style.webkitTransform = "scale(0.86)"
-		document.body.style.webkitTransformOrigin = "0px 0px"
-		document.getElementById("viewport").style.width = "116%"
-	})
-}
-
-function mobile_revert() {
-	chrome.extension.sendRequest({"mobile": false}, function(){})
+	return res
 }
 
 
-window.addEventListener('resize', function() {
-	handleEvent()
-})
-
-console.log(tstamp() + "content script re-initialized");
-handleEvent()
-
-
-function tstamp() {
-	var d = new Date()
-	return d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds() + "." + d.getMilliseconds()
+function _getComputedMetric(elem, name) 
+{
+	var str = window.getComputedStyle(elem).getPropertyValue(name)
+	var pxi = str.indexOf("px")
+	if (str == null || str.length == 0)
+		throw ("style." + name + " is empty")
+	if ( pxi <= 0 && pxi != str.length - 2)
+		throw ("style." + name + " does not end in \"px\" or otherwise invalid")
+	return parseInt(str.substr(0, str.length - 2))
 }
+
