@@ -1,6 +1,8 @@
 var tabs = {}
-var winsz = null	// 'normal' window size for the rest of the tabs
+var globalWindowSize = null	// 'normal' window size for the rest of the tabs
 var currentActiveTabId = null	// id of the currently active tab
+var currentWindowSize = null
+var singleWindowId = null
 
 var L_ORIGINAL = 0
 var L_SHRINKED = 1
@@ -21,21 +23,21 @@ function onRequest(req, sender, sendResponse)
 	var resp = {}
 
 	if (req.type == 'init') {
-		if (!(id in tabs))
+		if (id in tabs) {
+			console.error("init event on previously initialized tab (id=" + id + ")")
 			resp = onInit({"id": id, "browserObject": sender.tab})
-		else
-			log("WARN: init event on previously initialized tab (id=" + id + ")")
+		} else
+			resp = onInit({"id": id, "browserObject": sender.tab})
 
 	} else if (req.type == 'resize') {
 		if (!(id in tabs)) {
-			log("ERROR: resize event on uninitialized tab (id=" + id + ")")
-			sendResponse({})
-			return
+			console.error("resize event on uninitialized tab (id=" + id + ")")
+		} else {
+			var tabconf = tabs[id]
+			tabconf.browserObject = sender.tab
+			resp = onResize(tabconf, req.newGeometry)
+			delete tabconf.browserObject
 		}
-		var tabconf = tabs[id]
-		tabconf.browserObject = sender.tab
-		resp = onResize(tabconf, req.newGeometry)
-		delete tabconf.browserObject
 	} 
 	sendResponse(resp)
 }
@@ -44,35 +46,58 @@ function onRequest(req, sender, sendResponse)
 function onInit(tab)
 {
 	log("onInit(tab.id=" + tab.id + ")")
-	if (!winsz) {
-			_getWindowSize(tab.browserObject.windowId,	_recordGlobalWindowSize);
-	}
 	if ( !(tab.id in tabs) ) {
 		tabs[tab.id] = {
 			"id": 	 tab.id,
-			"level": 0,
+			"level": L_ORIGINAL,
 			"originalContentWidth" : null,
-			"ignoreResize": false,	
 			"lastDesktopUrl": null,
 			"windowSize": null
 		}
+		
+		// save global window size since the tab effectively transitioned from global -> indiv
+		chrome.windows.get(tab.browserObject.windowId,	function(wnd) {
+			console.log("\tsaving global size")
+			globalWindowSize = {"width": wnd.width, "height": wnd.height}
+			__cont__() 
+		})
 	}
+	__cont__(); function __cont__() {
+
+	// check if it's an active tab, if so enable resize events
+	chrome.tabs.query({"active": true, "windowId": tab.browserObject.windowId},
+			__cont__); function __cont__(tabList) {
+
+	console.assert(tabList.length == 1)
+	if (tabList[0].id == tab.id) {
+		console.log("\tnewly initialized tab is active")
+		chrome.tabs.sendRequest(tab.id,
+			{type: "ignoreResizeEvents", value: false}, function(){
+				log("\tresize events enabled for newly initialized #" + tab.id)
+			})
+	} else {
+		console.log("\tnewly initialized tab is not active")
+	}
+	// show icon
 	chrome.pageAction.show(tab.id)
+
+	}}
 	return {}
 }
 
 
 function onResize(tab, geom)
 {
-	log("onResize(tab.id=" + tab.id + ")")
+	log("onResize(tab.id=" + tab.id + ", geom.viewportSize=" + geom.viewportSize.width + "x" + geom.viewportSize.height + ")")
 
 	if (tab.originalContentWidth == null && (geom.contentSize.width > geom.viewportSize.width)
 		   	&& tab.level == L_ORIGINAL ) {
+		log("\tstoring tab.originalContentWidth")
 		tab.originalContentWidth = geom.contentSize.width
 	}
-
-	_getWindowSize(tab.browserObject.windowId,	function(curSize) {
-		tab.windowSize = curSize			 
+	
+	chrome.windows.get(tab.browserObject.windowId,	function(wnd) {
+			currentWindowSize = {"width": wnd.width, "height": wnd.height}
 	})
 
 	var newLevel
@@ -85,6 +110,7 @@ function onResize(tab, geom)
 		newLevel = L_ORIGINAL
 	}
 	
+	log("\t" + curLevel + "->" + newLevel)
 	if (newLevel != curLevel) {
 
 		var tranList = []
@@ -184,65 +210,95 @@ function setUAHeader(details)
 
 function onTabActivated(activeinfo) 
 {
-	var newActiveTabId = activeinfo.tabId
+	var newt = activeinfo.tabId
 	var win = activeinfo.windowId
-	log("onTabActivated(newtab=" + newActiveTabId + ",oldtab=" + currentActiveTabId)
-
-	if (newActiveTabId in tabs) {
-		tabs[newActiveTabId].ignoreResizeEvents = true;
-	}
-	
-	var ns = (newActiveTabId in tabs && tabs[newActiveTabId].windowSize != null)
-	var os = (currentActiveTabId in tabs && tabs[currentActiveTabId].windowSize != null)
-	currentActiveTabId = newActiveTabId
-
-	var newSize
-	if (!ns) {
-		if (!os) {
-			log("\t(global->global) do nothing")
+	var oldt = currentActiveTabId
+	if (singleWindowId != null) {
+		if (win != singleWindowId) {
+			console.error("tab #" + newt + " activated in a different window (" + win + "). ignoring")
 			return
-		} else {
-			log("\t(individual->global) restoring global size")
-			newSize = winsz
 		}
 	} else {
-		newSize = tabs[newActiveTabId].windowSize
-		if (!os) {
-			_getWindowSize(win, function(oldSize) {
-				log("\tsaving current window size")
-				_recordGlobalWindowSize(oldSize)
-				log("\t(global->individual) restoring individual size")
-				tabs[newActiveTabId].ignoreResizeEvents = false;
-				_resizeWindow(win, newSize)
-			})
-			return
-		}
-		log("\t(individual->individual) restoring individual size")
+	//	singleWindowId = win
+	//}
+		chrome.windows.get(win,	function(wnd) {	
+			if (wnd.type == "normal") {
+				log("\twindow is normal, only working with this one from now on")
+				singleWindowId = win
+				__cont__()
+			} else {
+				log("\twindow is not normal. ignoring")
+			}
+	})}
+	__cont__(); function __cont__()	{
+
+	log("onTabActivated(newt = " + newt + ", oldt = " + oldt + ", nwin = " + win )
+	console.assert(typeof newt != 'undefined' && newt != null)
+	console.assert(oldt == null || newt != oldt)
+	currentActiveTabId = newt
+	var oldIndiv = (oldt!= null && oldt in tabs)
+	var newIndiv = (newt in tabs)
+	log("\t" + (oldIndiv?"indiv":"global") + " -> " + (newIndiv?"indiv":"global"))
+	if (!newIndiv && !oldIndiv)
+		return
+	var oldSize
+	var newSize
+	if (oldIndiv) {
+		// ignore all resize events until tab active again
+		log("\tdisabling resize events for #" + newt)
+		chrome.tabs.sendRequest(oldt,
+			   					{type: "ignoreResizeEvents", value: true},
+							   	__cont__())
+	} else 	__cont__();	function __cont__() {
+
+	// obtain current window size (before it's resized!)
+	if (currentWindowSize) {	
+		oldSize = currentWindowSize
+		currentWindowSize = null
+		__cont__()
+	} else {
+		chrome.windows.get(win,	function(wnd) {
+			oldSize = {"width": wnd.width, "height": wnd.height}
+			__cont__() })
+	}; function __cont__() {
+	
+	// save current window size either as global or specific to previously active tab
+	if (oldIndiv) {
+		tabs[oldt].windowSize = oldSize
+	} else {
+		globalWindowSize = oldSize
 	}
-	_resizeWindow(win, newSize)
-}
+	if (newt != currentActiveTabId) {
+		console.error("active tab changed before finished updating state after previous change");
+	   	return
+   	}
+	// resize window
+	console.assert((newIndiv && tabs[newt].windowSize != null) || (!newIndiv && globalWindowSize != null))
+	var newSize = newIndiv ? tabs[newt].windowSize : globalWindowSize
+	if (newIndiv) {
+		currentWindowSize = newSize
+	}
+	if (_sizeEqual(newSize, oldSize)) {
+		log("\tindividual size same as global, not resizing")
+		__cont__() 
+	}
+	console.log("\tresizing window")
+	chrome.windows.update(win, newSize, function() {
+		window.setTimeout(__cont__, 200) }); function __cont__() {
 
-
-function _resizeWindow(windowId, newSize)
-{
-	log("\tresizing window to " + _size2str(newSize))
-	chrome.windows.update(windowId, newSize)
-}
-
-function _getWindowSize(win, callback) 
-{
-	chrome.windows.get(win,	function(wnd) {
-		callback({"width": wnd.width, "height": wnd.height})
-	})
-}
-
-
-function _recordGlobalWindowSize(size) 
-{
-	log("\trecording global window size")
-	log("\t\told " + _size2str(winsz))
-	log("\t\tnew " + _size2str(size))
-	winsz = size
+	// ready to accept new resize events
+	if (newt != currentActiveTabId) {
+		console.error("active tab changed before finished updating state after previous change");
+	   	return
+   	}
+	if (newIndiv) {
+		log("\tenabling resize events back for #" + newt)
+		chrome.tabs.sendRequest(newt,
+				{type: "ignoreResizeEvents", value: false}, function(){})
+	}
+	
+	}}}
+	}
 }
 
 
@@ -250,35 +306,13 @@ chrome.extension.onRequest.addListener(onRequest);
 chrome.tabs.onActivated.addListener(onTabActivated);
 
 
-// Called when the url of a tab changes.
-/*
-function checkForValidUrl(tabId, changeInfo, tab) {
-	host = getHostname(tab.url)
-	if ( host == "facebook.com") {
-		chrome.pageAction.show(tabId);
-	}
-	console.log(host)
-};
-
-
-function getHostname(url) {
-	var l = document.createElement("a")
-	l.href = url
-	var host = l.hostname
-	if (host.indexOf("www.") === 0)
-		host = host.substring(4)
-	return host
-};
-*/
-
-// Listen for any changes to the URL of any tab.
-//chrome.tabs.onUpdated.addListener(checkForValidUrl);
-
 function log(msg)
 {
 	if (msg[0] != '\t') { 
 		var d = new Date()
-		var tstamp = d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds() + "." + d.getMilliseconds() + "| "
+		var msec = d.getMilliseconds() + ""
+		msec = "000".slice(msec.length) + msec
+		var tstamp = /* d.getHours() + ":" + d.getMinutes() + */ ":" + d.getSeconds() + "." + msec + "| "
 		msg = tstamp + msg
 	}
 	console.log(msg)
@@ -294,5 +328,9 @@ function _size2str(size)
 	} else {
 		return size.width + "x" + size.height
 	}
+}
+
+function _sizeEqual(a,b) {
+	return (a.width == b.width && a.height == b.height)
 }
 

@@ -1,4 +1,5 @@
 var previousViewportSize = null
+var ignoreResizeEvents = true 	// will be enabled from background.js:onTabActivated()
 
 init()
 
@@ -6,25 +7,54 @@ init()
 function init() 
 {
 	chrome.extension.sendRequest({"type": "init"}, function(){})
-	_handleResize()
-	window.addEventListener('resize', _handleResize)
+	chrome.extension.onRequest.addListener(onRequest)
+	window.addEventListener('resize', function() {
+		var geom = _getGeometry()
+		log("window.onresize (" + _size2str(geom.viewportSize) + ")")
+		if (ignoreResizeEvents) {
+			log("\tignored: events disabled")
+		} else {
+			if (previousViewportSize == null || !_sizeEqual(previousViewportSize, geom.viewportSize)) {
+				previousViewportSize = geom.viewportSize
+				log("\tnotifying background script")
+				_handleResize(geom)
+			} else {
+				log("\tignored: size not changed")
+			}
+		}
+	})
 }
 
 
-function _handleResize()
+function _handleResize(geom)
 {
-	var geom = _getGeometry() 
-	if (previousViewportSize == null || !_sizeEqual(previousViewportSize, geom.viewportSize)) {
-		previousViewportSize = geom.viewportSize
-		chrome.extension.sendRequest( {"type": "resize", "newGeometry": geom}, function(response) {
-			var ts = response.parametrizedElementTransformList
-			if (typeof ts != 'undefined') {
-				for (var i = 0; i < ts.length; i++) {
-					applyTransform(ts[i].elementTransform, ts[i].param)
-				}
+	chrome.extension.sendRequest( {"type": "resize", "newGeometry": geom}, function(response) {
+		var ts = response.parametrizedElementTransformList
+		if (typeof ts != 'undefined') {
+			log("applying element transformations")
+			for (var i = 0; i < ts.length; i++) {
+				applyTransform(ts[i].elementTransform, ts[i].param)
 			}
-		})
+		}
+	})
+}
+
+
+function onRequest(req, sender, sendResponse) 
+{
+	if (req.type == "ignoreResizeEvents") {
+		ignoreResizeEvents = req.value
+		log("events " + (ignoreResizeEvents ? "disabled" : "enabled"))
+		if (!ignoreResizeEvents) {
+			var geom = _getGeometry()
+			if (previousViewportSize == null || !_sizeEqual(previousViewportSize, geom.viewportSize)) {
+				previousViewportSize = geom.viewportSize
+				console.log("\tsize changed (" + _size2str(geom.viewportSize) + ") since events was last disabled, notifying background script")
+				_handleResize(geom)
+			}
+		}
 	}
+	sendResponse({})
 }
 
 
@@ -106,4 +136,30 @@ function _getComputedMetric(elem, name)
 		throw ("style." + name + " does not end in \"px\" or otherwise invalid")
 	return parseInt(str.substr(0, str.length - 2))
 }
+
+
+function log(msg)
+{
+	if (msg[0] != '\t') { 
+		var d = new Date()
+		var msec = d.getMilliseconds() + ""
+		msec = "000".slice(msec.length) + msec
+		var tstamp = /* d.getHours() + ":" + d.getMinutes() + */ ":" + d.getSeconds() + "." + msec + "| "
+		msg = tstamp + msg
+	}
+	console.log(msg)
+}
+
+
+function _size2str(size) 
+{
+	if (size == null) {
+		return ""
+	} else if (typeof size.width == 'undefined' || typeof size.height == 'undefined') {
+		return "invalid"
+	} else {
+		return size.width + "x" + size.height
+	}
+}
+
 
