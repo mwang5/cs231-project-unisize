@@ -25,6 +25,7 @@
 				"*://www.facebook.com/",
 				"*://www.facebook.com/?sk=nf",
 				"*://www.facebook.com/home.php*",
+			      "*://www.facebook.com/events/calendar",
 				// (mobile)
 				"*://m.facebook.com/",
 				"*://m.facebook.com/#!/home.php*",
