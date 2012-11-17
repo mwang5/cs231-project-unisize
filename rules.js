@@ -28,7 +28,30 @@ RULE_DEFINITIONS =
 							"method": T_RELATIVE_PIXEL_METRIC,
 							"property": "margin-left",
 							"maxDelta" : -100 
+					   	},
+						{ 
+							"element": '//*[@id="contentCol"]',
+							"method": T_SET_STRING_PROPERTY,
+							"property": "position",
+							"value" : "relative" 
 					   	}, 
+						{ 
+							"element": '//*[@id="contentCol"]',
+							"method": T_SET_STRING_PROPERTY,
+							"property": "-webkit-box-shadow",
+							"value" : "#5A5A5A -20px 0px 50px -25px" 
+					   	}, 
+						{ 
+							"element": '//*[@id="contentCol"]',
+							"method": T_SET_STRING_PROPERTY,
+							"property": "border-left",
+							"value" : "1px solid gray" 
+					   	},
+					   	/* Remove ellipsis in links, padding on the right and onhover edit/pencil icon:
+						   .uiSideNav .sideNavItem .linkWrap{text-overflow:clip; }
+						   .uiSideNav .item, .uiSideNav .subitem { padding-right: 0px; }
+						   .buttonWrap {display: none;}
+						   */
 						{ 
 							"element": '//*[@id="globalContainer"]',
 							"method": T_RELATIVE_PIXEL_METRIC,
