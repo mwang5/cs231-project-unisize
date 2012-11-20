@@ -85,17 +85,22 @@ function applyTransform(tran, param)
 	var xpres = document.evaluate(tran.element, document, null, XPathResult.UNORDERED_NODE_ITERATOR_TYPE, null)
 	var elem = xpres.iterateNext()
 	/* SEE: http://blog.stchur.com/2006/06/21/css-computed-style/ */
-	switch(tran.method) {
-		case T_RELATIVE_PIXEL_METRIC:
-			elem.style[_stylePropertyNameToCamelCase(tran.property)] = 
-					(_getComputedMetric(elem, tran.property) + param) + "px"
-			break
-		case T_SET_STRING_PROPERTY:
-			elem.style[_stylePropertyNameToCamelCase(tran.property)] = param 
-			break
-		default:
-			throw "unsupported element transformation method"
-	}
+    
+    while(elem != null)
+    {
+        switch(tran.method) {
+            case T_RELATIVE_PIXEL_METRIC:
+                elem.style[_stylePropertyNameToCamelCase(tran.property)] =
+                        (_getComputedMetric(elem, tran.property) + param) + "px"
+                break
+            case T_SET_STRING_PROPERTY:
+                elem.style[_stylePropertyNameToCamelCase(tran.property)] = param
+                break
+            default:
+                throw "unsupported element transformation method"
+        }
+        elem = xpres.iterateNext()
+    }
 }
 
 

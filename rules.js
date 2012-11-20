@@ -59,7 +59,19 @@ RULE_DEFINITIONS =
 						   	"maxDelta": -100
 					   	}                       
 					]
-				},                      
+				},
+                {
+                      "target": "calendar",
+                      "transform": [
+                            {
+                                    "element": '//*[contains(@class,"fbCalendarGridDayHeader") or contains(@class,"fbCalendarGridItem")]',
+                                    "method": T_RELATIVE_PIXEL_METRIC,
+                                    "property":"width",
+                                    "maxDelta": -20
+                            }
+                        ]
+                },
+
 
 				{
 					// Hide right column entirely (Ticker + Ads)

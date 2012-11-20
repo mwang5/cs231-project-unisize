@@ -13,7 +13,7 @@ ICON_MAP[L_ORIGINAL] = "icon-inactive.png"
 ICON_MAP[L_SHRINKED] = "icon.png"
 ICON_MAP[L_MOBILE] = "icon-mobile.png"
 
-var MOBILE_WIDTH_THRESHOLD = 400
+var MOBILE_WIDTH_THRESHOLD = 500
 
 
 // Called when a message is passed.  
@@ -168,19 +168,43 @@ function onResize(tab, geom)
 		
 		if (shrink != null) {
 			var modifications = RULE_DEFINITIONS[0].mods
-			for (var i = 0; i < modifications.length; i++) {
-				for (var j = 0; j < modifications[i].transform.length; j++) {
+            var hasCalendar = tab.browserObject.url.indexOf("calendar");
+            //**************** Calendar page *******************
+            if(hasCalendar >= 0)
+            {
+                tranList = [];
+                for (var i = 0; i < modifications.length; i++) {
+                    if(!modifications[i].target || modifications[i].target != "calendar")
+                        continue;
+                    for (var j = 0; j < modifications[i].transform.length; j++) {
+                        
+                        var tran = modifications[i].transform[j]
+                        var tranInstance = {"elementTransform": tran}
+                        if (tran.method == T_RELATIVE_PIXEL_METRIC) {
+                            tranInstance.param = shrink ? tran.maxDelta : -tran.maxDelta
+                        } else if (tran.method == T_SET_STRING_PROPERTY) {
+                            tranInstance.param = shrink ? tran.value : ""
+                        }
+                        tranList = tranList.concat(tranInstance)
+                    }	
+                }
+            }
+            else
+            {
+                for (var i = 0; i < modifications.length; i++) {
+                    for (var j = 0; j < modifications[i].transform.length; j++) {
 
-					var tran = modifications[i].transform[j]
-					var tranInstance = {"elementTransform": tran}
-					if (tran.method == T_RELATIVE_PIXEL_METRIC) { 
-						tranInstance.param = shrink ? tran.maxDelta : -tran.maxDelta
-					} else if (tran.method == T_SET_STRING_PROPERTY) {
-						tranInstance.param = shrink ? tran.value : ""
-					}
-					tranList = tranList.concat(tranInstance)
-				}	
-			}
+                        var tran = modifications[i].transform[j]
+                        var tranInstance = {"elementTransform": tran}
+                        if (tran.method == T_RELATIVE_PIXEL_METRIC) {
+                            tranInstance.param = shrink ? tran.maxDelta : -tran.maxDelta
+                        } else if (tran.method == T_SET_STRING_PROPERTY) {
+                            tranInstance.param = shrink ? tran.value : ""
+                        }
+                        tranList = tranList.concat(tranInstance)
+                    }
+                }
+            }
 		}
 
 		tab.level = newLevel
