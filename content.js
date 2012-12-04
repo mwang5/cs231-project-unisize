@@ -2,9 +2,11 @@ var previousViewportSize = null
 var ignoreResizeEvents = true 	// will be enabled from background.js:onTabActivated()
 
 init()
-
-
-function init() 
+window.onload = function () {
+    window.addEventListener('DOMNodeInserted', OnNodeInserted, false);
+};
+var transform_rules;
+function init()
 {
 	chrome.extension.sendRequest({"type": "init"}, function(){})
 	chrome.extension.onRequest.addListener(onRequest)
@@ -25,12 +27,30 @@ function init()
 	})
 }
 
+function OnNodeInserted(event_args)
+{
+    //console.log(event_args);
+    if(event_args.target.tagName != "DIV")
+        return;
+    console.log(event_args);
+    if(transform_rules)
+    {
+        if(event_args.target.baseURI.indexOf("calendar") > 0)
+        {
+            for (var i = 0; i < transform_rules.length; i++) {
+                //TODO: seems like pre still contains every calendar table, that might be it, get only the table with xpath /table[contains(@class, "...")]
+                applyTransformTo(event_args.target, transform_rules[i].elementTransform, transform_rules[i].param);
+            }
+        }
+    }
+}
 
 function _handleResize(geom)
 {
 	chrome.extension.sendRequest( {"type": "resize", "newGeometry": geom}, function(response) {
 		var ts = response.parametrizedElementTransformList
 		if (typeof ts != 'undefined') {
+            transform_rules = ts;
 			log("applying element transformations")
 			for (var i = 0; i < ts.length; i++) {
 				applyTransform(ts[i].elementTransform, ts[i].param)
@@ -79,8 +99,51 @@ function _getGeometry()
 var T_RELATIVE_PIXEL_METRIC = 1
 var T_SET_STRING_PROPERTY	= 2
 
+function applyTransformTo(target, tran, param)
+{
+    //console.log("In applyTransformTo");
+    //console.log(target);
+    var elements = target.querySelectorAll("div.fbCalendarGridDayHeader, div.fbCalendarGridItem");
+   	//var xpres = document.evaluate(tran.element, target, null, XPathResult.UNORDERED_NODE_ITERATOR_TYPE, null)
+	//var elem = xpres.iterateNext()
+	/* SEE: http://blog.stchur.com/2006/06/21/css-computed-style/ */
+    
+    for(var i = 0;i < elements.length; i++)
+    {
+        switch(tran.method) {
+            case T_RELATIVE_PIXEL_METRIC:
+                elements[i].style[_stylePropertyNameToCamelCase(tran.property)] =
+                (_getComputedMetric(elements[i], tran.property) + param) + "px"
+                break
+            case T_SET_STRING_PROPERTY:
+                elements[i].style[_stylePropertyNameToCamelCase(tran.property)] = param
+                break
+            default:
+                throw "unsupported element transformation method"
+        }
 
-function applyTransform(tran, param) 
+    }/*
+    while(elem != null)
+    {
+        //console.log(elem);
+        switch(tran.method) {
+            case T_RELATIVE_PIXEL_METRIC:
+                elem.style[_stylePropertyNameToCamelCase(tran.property)] =
+                (_getComputedMetric(elem, tran.property) + param) + "px"
+                break
+            case T_SET_STRING_PROPERTY:
+                elem.style[_stylePropertyNameToCamelCase(tran.property)] = param
+                break
+            default:
+                throw "unsupported element transformation method"
+        }
+        elem = xpres.iterateNext()
+    }*/
+}
+
+
+
+function applyTransform(tran, param)
 {
 	var xpres = document.evaluate(tran.element, document, null, XPathResult.UNORDERED_NODE_ITERATOR_TYPE, null)
 	var elem = xpres.iterateNext()

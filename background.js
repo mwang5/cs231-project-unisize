@@ -328,7 +328,10 @@ function onTabActivated(activeinfo)
 
 chrome.extension.onRequest.addListener(onRequest);
 chrome.tabs.onActivated.addListener(onTabActivated);
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab){
 
+                                  //console.log(changeInfo);
+});
 
 function log(msg)
 {
