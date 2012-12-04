@@ -38,7 +38,6 @@ function OnNodeInserted(event_args)
         if(event_args.target.baseURI.indexOf("calendar") > 0)
         {
             for (var i = 0; i < transform_rules.length; i++) {
-                //TODO: seems like pre still contains every calendar table, that might be it, get only the table with xpath /table[contains(@class, "...")]
                 applyTransformTo(event_args.target, transform_rules[i].elementTransform, transform_rules[i].param);
             }
         }
