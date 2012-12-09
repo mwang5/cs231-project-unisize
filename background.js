@@ -209,7 +209,7 @@ function onResize(tab, geom)
 
 		tab.level = newLevel
 		chrome.pageAction.setIcon({path: ICON_MAP[newLevel], tabId: tab.id})
-		return { "parametrizedElementTransformList": tranList }
+		return { "parametrizedElementTransformList": tranList , "tab_level":tab.level}
 	}
 	
 	return {}

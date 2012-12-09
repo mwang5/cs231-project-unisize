@@ -1,13 +1,20 @@
 var previousViewportSize = null
 var ignoreResizeEvents = true 	// will be enabled from background.js:onTabActivated()
+var L_ORIGINAL = 0
+var L_SHRINKED = 1
+var L_MOBILE   = 2
+var cur_level = 0;
 
 init()
 window.onload = function () {
-    window.addEventListener('DOMNodeInserted', OnNodeInserted, false);
+    
+    //window.addEventListener('DOMNodeInserted', OnNodeInserted, true);
+    //window.addEventListener('DOMNodeInsertedIntoDocument', OnNodeInserted, false);
 };
 var transform_rules;
 function init()
 {
+    window.addEventListener('DOMNodeInserted', OnNodeInserted, true);
 	chrome.extension.sendRequest({"type": "init"}, function(){})
 	chrome.extension.onRequest.addListener(onRequest)
 	window.addEventListener('resize', function() {
@@ -35,7 +42,7 @@ function OnNodeInserted(event_args)
     console.log(event_args);
     if(transform_rules)
     {
-        if(event_args.target.baseURI.indexOf("calendar") > 0)
+        if(event_args.target.baseURI.indexOf("calendar") > 0 && cur_level == L_SHRINKED)
         {
             for (var i = 0; i < transform_rules.length; i++) {
                 applyTransformTo(event_args.target, transform_rules[i].elementTransform, transform_rules[i].param);
@@ -47,20 +54,23 @@ function OnNodeInserted(event_args)
 function _handleResize(geom)
 {
 	chrome.extension.sendRequest( {"type": "resize", "newGeometry": geom}, function(response) {
-		var ts = response.parametrizedElementTransformList
-		if (typeof ts != 'undefined') {
+        var ts = response.parametrizedElementTransformList;
+        if(typeof response.tab_level != 'undefined')
+            cur_level = response.tab_level;
+        if (typeof ts != 'undefined') {
             transform_rules = ts;
-			log("applying element transformations")
-			for (var i = 0; i < ts.length; i++) {
-				applyTransform(ts[i].elementTransform, ts[i].param)
-			}
-		}
-	})
+            console.log("applying element transformations")
+            for (var i = 0; i < ts.length; i++) {
+                applyTransform(ts[i].elementTransform, ts[i].param)
+            }
+        }
+    })
 }
 
 
 function onRequest(req, sender, sendResponse) 
 {
+    tab = sender.tab;
 	if (req.type == "ignoreResizeEvents") {
 		ignoreResizeEvents = req.value
 		log("events " + (ignoreResizeEvents ? "disabled" : "enabled"))
