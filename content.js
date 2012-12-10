@@ -6,8 +6,8 @@ var L_MOBILE   = 2
 var cur_level = 0;
 
 init()
+
 window.onload = function () {
-    
     //window.addEventListener('DOMNodeInserted', OnNodeInserted, true);
     //window.addEventListener('DOMNodeInsertedIntoDocument', OnNodeInserted, false);
 };
@@ -26,6 +26,7 @@ function init()
 			if (previousViewportSize == null || !_sizeEqual(previousViewportSize, geom.viewportSize)) {
 				previousViewportSize = geom.viewportSize
 				log("\tnotifying background script")
+				_animate()
 				_handleResize(geom)
 			} else {
 				log("\tignored: size not changed")
@@ -175,6 +176,12 @@ function applyTransform(tran, param)
     }
 }
 
+function _animate() 
+{
+	document.getElementById('leftCol').style['-webkit-transition'] = 'all 0.6s ease 0s'
+	document.getElementById('contentCol').style['-webkit-transition'] = 'all 0.6s ease 0s'
+	document.getElementById('rightCol').style['-webkit-transition'] = 'all 0.1s ease 0s'
+}
 
 function _stylePropertyNameToCamelCase(name)
 {
