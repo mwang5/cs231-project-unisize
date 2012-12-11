@@ -174,6 +174,7 @@ function applyTransform(tran, param)
 					{
 						leftcol.style[_stylePropertyNameToCamelCase("width")] = (_getComputedMetric(leftcol, "width") + 100) + "px"
 						contentcol.style[_stylePropertyNameToCamelCase("margin-left")] = (_getComputedMetric(contentcol, "margin-left") + 100) + "px"
+						contentcol.style['-webkit-box-shadow'] = ""
 					}
 				}
 				leftcol.onmouseout = function() {
@@ -181,6 +182,7 @@ function applyTransform(tran, param)
 					{
 						leftcol.style[_stylePropertyNameToCamelCase("width")] = (_getComputedMetric(leftcol, "width") - 100) + "px"
 						contentcol.style[_stylePropertyNameToCamelCase("margin-left")] = (_getComputedMetric(contentcol, "margin-left") - 100) + "px"
+						contentcol.style['-webkit-box-shadow'] = "#5A5A5A -20px 0px 50px -25px"
 					}
 				}	
                 break
