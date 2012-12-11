@@ -11,7 +11,9 @@ window.onload = function () {
     //window.addEventListener('DOMNodeInserted', OnNodeInserted, true);
     //window.addEventListener('DOMNodeInsertedIntoDocument', OnNodeInserted, false);
 };
+
 var transform_rules;
+
 function init()
 {
     window.addEventListener('DOMNodeInserted', OnNodeInserted, true);
@@ -27,7 +29,7 @@ function init()
 				previousViewportSize = geom.viewportSize
 				log("\tnotifying background script")
 				_animate()
-				_handleResize(geom)
+				_handleResize(geom) 
 			} else {
 				log("\tignored: size not changed")
 			}
@@ -117,9 +119,9 @@ function applyTransformTo(target, tran, param)
    	//var xpres = document.evaluate(tran.element, target, null, XPathResult.UNORDERED_NODE_ITERATOR_TYPE, null)
 	//var elem = xpres.iterateNext()
 	/* SEE: http://blog.stchur.com/2006/06/21/css-computed-style/ */
-    
     for(var i = 0;i < elements.length; i++)
     {
+		log(elements[i])
         switch(tran.method) {
             case T_RELATIVE_PIXEL_METRIC:
                 elements[i].style[_stylePropertyNameToCamelCase(tran.property)] =
@@ -132,7 +134,8 @@ function applyTransformTo(target, tran, param)
                 throw "unsupported element transformation method"
         }
 
-    }/*
+    }
+	/*
     while(elem != null)
     {
         //console.log(elem);
@@ -151,20 +154,17 @@ function applyTransformTo(target, tran, param)
     }*/
 }
 
-
-
 function applyTransform(tran, param)
 {
 	var xpres = document.evaluate(tran.element, document, null, XPathResult.UNORDERED_NODE_ITERATOR_TYPE, null)
 	var elem = xpres.iterateNext()
 	/* SEE: http://blog.stchur.com/2006/06/21/css-computed-style/ */
-    
     while(elem != null)
     {
         switch(tran.method) {
             case T_RELATIVE_PIXEL_METRIC:
                 elem.style[_stylePropertyNameToCamelCase(tran.property)] =
-                        (_getComputedMetric(elem, tran.property) + param) + "px"
+					(_getComputedMetric(elem, tran.property) + param) + "px"
                 break
             case T_SET_STRING_PROPERTY:
                 elem.style[_stylePropertyNameToCamelCase(tran.property)] = param
@@ -174,13 +174,52 @@ function applyTransform(tran, param)
         }
         elem = xpres.iterateNext()
     }
+
+}
+
+
+function _handleMouseover() 
+{
+	var leftcol = document.getElementById('leftCol')
+	var contentcol = document.getElementById('contentCol')
+	var global = document.getElementById('globalContainer')
+	log(_getComputedMetric(leftcol, _stylePropertyNameToCamelCase("width")))
+	if (_getComputedMetric(leftcol, _stylePropertyNameToCamelCase("width")) < 100) {
+		console.log(_getComputedMetric(leftcol, _stylePropertyNameToCamelCase("width")))
+		leftcol.onmouseover = function() {
+			leftcol.style[_stylePropertyNameToCamelCase("width")] = (_getComputedMetric(leftcol, "width") + 100) + "px"
+			contentcol.style[_stylePropertyNameToCamelCase("margin-left")] = (_getComputedMetric(contentcol, "margin-left") + 100) + "px"
+			global.style[_stylePropertyNameToCamelCase("width")] = (_getComputedMetric(global, "width") + 244) + "px"
+		}
+		leftcol.onmouseout =  function() {
+			leftcol.style[_stylePropertyNameToCamelCase("width")] = (_getComputedMetric(leftcol, "width") - 100) + "px"
+			contentcol.style[_stylePropertyNameToCamelCase("margin-left")] = (_getComputedMetric(contentcol, "margin-left") - 100) + "px"
+			global.style[_stylePropertyNameToCamelCase("width")] = (_getComputedMetric(global, "width") - 244) + "px"
+		}
+	} else if (_getComputedMetric(leftcol, _stylePropertyNameToCamelCase("width")) > 100) {
+		leftcol.onmouseover = function(){}
+		leftcol.onmouseout = function(){}			
+	}
 }
 
 function _animate() 
 {
-	document.getElementById('leftCol').style['-webkit-transition'] = 'all 0.6s ease 0s'
-	document.getElementById('contentCol').style['-webkit-transition'] = 'all 0.6s ease 0s'
-	document.getElementById('rightCol').style['-webkit-transition'] = 'all 0.1s ease 0s'
+	
+	if (document.getElementById('leftCol') != null)
+	{
+		document.getElementById('leftCol').style['-webkit-transition'] = 'all 0.8s ease 0s'
+	}
+	if (document.getElementById('contentCol') != null)
+	{
+		document.getElementById('contentCol').style['-webkit-transition'] = 'all 0.8s ease 0s'
+	}
+	if (document.getElementById('rightCol') != null)
+	{
+		document.getElementById('rightCol').style['-webkit-transition'] = 'all 0.1s ease 0s'
+		document.getElementById('rightCol').addEventListener( 'webkitTransitionEnd', 
+		function( event ) { document.getElementById('rightCol').style['display'] = 'none' }, false )
+	}
+	
 }
 
 function _stylePropertyNameToCamelCase(name)

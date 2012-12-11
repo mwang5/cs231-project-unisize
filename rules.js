@@ -81,10 +81,16 @@ RULE_DEFINITIONS =
 					"transform": [ 
 						{ 
 							"element": '//*[@id="rightCol"]',
-						   	"method": T_RELATIVE_PIXEL_METRIC,
+							"method": T_RELATIVE_PIXEL_METRIC,
 							"property": "width",
-							"maxDelta": -244
-					   	},    
+						   	"maxDelta": -244
+					   	}, 
+						{ 
+							"element": '//*[@id="rightCol"]',
+						   	"method": T_SET_STRING_PROPERTY,
+							"property": "display",
+							"value"	  : "none"
+					   	},
 						{ 
 							"element": '//*[@id="rightCol"]',
 						   	"method": T_SET_STRING_PROPERTY,
